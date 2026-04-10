@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Client Banking Portal</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+	<style>
+		:root {
+			--bg-ink: #0c1625;
+			--bg-mid: #11243a;
+			--surface: #f8fafc;
+			--steel: #1c3550;
+			--teal: #06b6d4;
+			--mint: #22c55e;
+			--amber: #f59e0b;
+			--rose: #fb7185;
+		}
+
+		body {
+			font-family: 'IBM Plex Sans', sans-serif;
+			background:
+				radial-gradient(1200px 500px at 0% 0%, #1f3f66 0%, rgba(31, 63, 102, 0) 65%),
+				radial-gradient(1000px 600px at 100% 0%, #0f4a68 0%, rgba(15, 74, 104, 0) 65%),
+				linear-gradient(140deg, var(--bg-ink), var(--bg-mid));
+			min-height: 100vh;
+		}
+
+		.display-font {
+			font-family: 'Space Grotesk', sans-serif;
+		}
+
+		.glass {
+			background: rgba(248, 250, 252, 0.92);
+			backdrop-filter: blur(10px);
+		}
+
+		.raise {
+			transition: transform 220ms ease, box-shadow 220ms ease;
+		}
+
+		.raise:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 14px 34px rgba(12, 22, 37, 0.16);
+		}
+
+		.fade-in {
+			opacity: 0;
+			transform: translateY(10px);
+			animation: fadeIn 500ms ease forwards;
+		}
+
+		@keyframes fadeIn {
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+	</style>
+</head>
+<body class="text-slate-900">
+	<div class="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
+		<header class="mb-6 rounded-3xl border border-cyan-100/20 bg-slate-900/35 p-5 text-slate-50 shadow-2xl shadow-slate-900/30 md:p-7">
+			<div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+				<div>
+					<p class="mb-2 text-xs uppercase tracking-[0.25em] text-cyan-300">Client Portal</p>
+					<h1 class="display-font text-2xl font-bold md:text-4xl">Apex Community Banking: Client Dashboard</h1>
+					<p class="mt-2 max-w-2xl text-sm text-slate-200 md:text-base">
+						Client-only experience for account CRUD, deposits, withdrawals, transfers, and personal transaction reporting.
+					</p>
+				</div>
+				<div class="w-full rounded-2xl bg-slate-950/45 p-4 md:max-w-md">
+					<div class="grid grid-cols-1 gap-3 text-sm">
+						<label class="space-y-1">
+							<span class="text-slate-300">Client User ID</span>
+							<input id="loginUserId" type="number" value="1" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 outline-none ring-cyan-400 focus:ring-2" />
+						</label>
+					</div>
+					<button id="authBtn" class="mt-3 w-full rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-cyan-400">Generate Client JWT Session</button>
+					<a href="admin.html" class="mt-2 block w-full rounded-lg border border-cyan-300/30 bg-slate-800 px-4 py-2 text-center text-sm font-semibold text-cyan-200 transition hover:bg-slate-700">Go To Admin Portal</a>
+					<p id="authStatus" class="mt-2 min-h-5 text-xs text-cyan-200"></p>
+				</div>
+			</div>
+		</header>
+
+		<main class="grid grid-cols-1 gap-6">
+			<section class="space-y-6">
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:100ms] md:p-6">
+					<div class="mb-4 flex items-center justify-between">
+						<h2 class="display-font text-xl font-semibold">Account Overview</h2>
+						<p class="text-xs uppercase tracking-[0.22em] text-slate-500">Live Mock Data</p>
+					</div>
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+						<article class="raise rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="text-xs uppercase tracking-widest text-slate-500">Checking</p>
+							<p id="checkingBalance" class="mt-2 display-font text-2xl font-bold text-slate-900">$0.00</p>
+						</article>
+						<article class="raise rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="text-xs uppercase tracking-widest text-slate-500">Savings</p>
+							<p id="savingsBalance" class="mt-2 display-font text-2xl font-bold text-slate-900">$0.00</p>
+						</article>
+						<article class="raise rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="text-xs uppercase tracking-widest text-slate-500">Monthly Net</p>
+							<p id="monthlyNet" class="mt-2 display-font text-2xl font-bold text-slate-900">$0.00</p>
+						</article>
+					</div>
+				</div>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:180ms] md:p-6">
+					<div class="mb-4 flex items-center justify-between">
+						<h2 class="display-font text-xl font-semibold">Client Self-Service (CRUD Update)</h2>
+						<span class="rounded-full bg-slate-900 px-3 py-1 text-xs text-cyan-200">Target: acknowledgment under 2 seconds</span>
+					</div>
+					<form id="profileForm" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+						<input id="firstName" class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none ring-cyan-400 focus:ring-2" placeholder="First Name" />
+						<input id="lastName" class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none ring-cyan-400 focus:ring-2" placeholder="Last Name" />
+						<input id="phone" class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none ring-cyan-400 focus:ring-2" placeholder="Phone #" />
+						<input id="email" class="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none ring-cyan-400 focus:ring-2" placeholder="Email" />
+						<button class="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-800">Save Profile</button>
+					</form>
+					<p id="profileAck" class="mt-3 min-h-5 text-sm"></p>
+				</div>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:220ms] md:p-6">
+					<div class="mb-4 flex items-center justify-between">
+						<h2 class="display-font text-xl font-semibold">Personal Account Dashboard (CRUD)</h2>
+						<span class="rounded-full bg-slate-900 px-3 py-1 text-xs text-cyan-200">Add, Edit/Update, Delete per account</span>
+					</div>
+					<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+						<table class="min-w-full text-left text-sm">
+							<thead class="bg-slate-100 text-slate-600">
+								<tr>
+									<th class="px-3 py-2">Account_ID</th>
+									<th class="px-3 py-2">Type</th>
+									<th class="px-3 py-2">Nickname</th>
+									<th class="px-3 py-2">Balance</th>
+								</tr>
+							</thead>
+							<tbody id="accountTableBody"></tbody>
+						</table>
+					</div>
+
+					<div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+						<form id="createAccountForm" class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="font-semibold text-slate-800">Add Account</p>
+							<select id="createAccountType" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+								<option value="checking">Checking</option>
+								<option value="savings">Savings</option>
+							</select>
+							<input id="createAccountNickname" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Nickname (e.g., Daily Spend)" />
+							<input id="createOpeningBalance" type="number" step="0.01" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Opening Balance" />
+							<button class="w-full rounded-lg bg-emerald-500 px-3 py-2 font-semibold text-white transition hover:bg-emerald-600">Create</button>
+						</form>
+
+						<form id="updateAccountForm" class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="font-semibold text-slate-800">Edit / Update Account</p>
+							<select id="updateAccountId" class="w-full rounded-lg border border-slate-300 px-3 py-2"></select>
+							<input id="updateNickname" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="New Nickname" />
+							<input id="updateBalance" type="number" step="0.01" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="New Balance" />
+							<button class="w-full rounded-lg bg-cyan-600 px-3 py-2 font-semibold text-white transition hover:bg-cyan-700">Update</button>
+						</form>
+
+						<form id="deleteAccountForm" class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="font-semibold text-slate-800">Delete Account</p>
+							<select id="deleteAccountId" class="w-full rounded-lg border border-slate-300 px-3 py-2"></select>
+							<p class="text-xs text-slate-500">Deletes only this account and its related account-side transactions for this user.</p>
+							<button class="w-full rounded-lg bg-rose-500 px-3 py-2 font-semibold text-white transition hover:bg-rose-600">Delete</button>
+						</form>
+					</div>
+					<p id="accountCrudAck" class="mt-3 min-h-5 text-sm"></p>
+				</div>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:260ms] md:p-6">
+					<h2 class="display-font mb-4 text-xl font-semibold">Transactions</h2>
+					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<form id="cashForm" class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="font-semibold text-slate-800">Deposit / Withdraw</p>
+							<select id="cashAccount" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+								<option value="checking">Checking</option>
+								<option value="savings">Savings</option>
+							</select>
+							<select id="cashType" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+								<option value="DEPOSIT">Deposit</option>
+								<option value="WITHDRAW">Withdraw</option>
+							</select>
+							<input id="cashAmount" type="number" step="0.01" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Amount" />
+							<button class="w-full rounded-lg bg-emerald-500 px-3 py-2 font-semibold text-white transition hover:bg-emerald-600">Submit</button>
+						</form>
+
+						<form id="transferForm" class="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+							<p class="font-semibold text-slate-800">Client-to-Client Transfer</p>
+							<select id="transferFrom" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+								<option value="checking">From Checking</option>
+								<option value="savings">From Savings</option>
+							</select>
+							<input id="transferRecipient" type="number" min="1" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Recipient User_ID" />
+							<input id="transferAmount" type="number" step="0.01" min="0" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Amount" />
+							<input id="transferNotes" class="w-full rounded-lg border border-slate-300 px-3 py-2" placeholder="Notes" />
+							<button class="w-full rounded-lg bg-cyan-600 px-3 py-2 font-semibold text-white transition hover:bg-cyan-700">Transfer</button>
+						</form>
+					</div>
+					<p id="txAck" class="mt-3 min-h-5 text-sm"></p>
+				</div>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:340ms] md:p-6">
+					<div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+						<h2 class="display-font text-xl font-semibold">Transaction Log & Monthly Report</h2>
+						<input id="monthFilter" type="month" class="rounded-lg border border-slate-300 px-3 py-2" />
+					</div>
+					<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+						<table class="min-w-full text-left text-sm">
+							<thead class="bg-slate-100 text-slate-600">
+								<tr>
+									<th class="px-3 py-2">Date</th>
+									<th class="px-3 py-2">Type</th>
+									<th class="px-3 py-2">Amount</th>
+									<th class="px-3 py-2">From</th>
+									<th class="px-3 py-2">To</th>
+									<th class="px-3 py-2">Notes</th>
+								</tr>
+							</thead>
+							<tbody id="txTableBody"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:500ms] md:p-6">
+					<h2 class="display-font text-xl font-semibold">Entity Blueprint</h2>
+					<ul class="mt-3 space-y-2 text-sm text-slate-700">
+						<li><span class="font-semibold">Clients:</span> User_ID, First Name, Last Name, Phone #, Email, Checking_ID, Savings_ID</li>
+						<li><span class="font-semibold">Transactions:</span> Transaction_ID, Sender_ID, Recipient_ID, Transaction_Type, Date, Amount, Notes</li>
+						<li><span class="font-semibold">Admins:</span> Admin_ID, First_Name, Last_Name, Phone #, Email</li>
+					</ul>
+				</div>
+
+				<div class="glass fade-in rounded-3xl p-5 shadow-xl [animation-delay:580ms] md:p-6">
+					<h2 class="display-font text-xl font-semibold">API Route Plan</h2>
+					<ul class="mt-3 space-y-1 text-sm text-slate-700">
+						<li>GET /user_ID</li>
+						<li>GET /user_ID/savings</li>
+						<li>GET /user_ID/checking</li>
+						<li>PUT /user_ID/checking</li>
+						<li>PUT /user_ID/savings</li>
+						<li>POST /user_ID</li>
+						<li>POST /user_ID/checking</li>
+						<li>POST /user_ID/savings</li>
+						<li>DELETE /user_ID</li>
+						<li>DELETE /user_ID/checking</li>
+						<li>DELETE /user_ID/savings</li>
+					</ul>
+				</div>
+		</main>
+	</div>
+
+	<script>
+		const clients = [
+			{ userId: 1, firstName: 'Alex', lastName: 'Parker', phone: '555-410-7721', email: 'alex.parker@apexbank.io', checkingId: 101, savingsId: 201 },
+			{ userId: 2, firstName: 'Maya', lastName: 'Rodriguez', phone: '555-410-8872', email: 'maya.rodriguez@apexbank.io', checkingId: 102, savingsId: 202 },
+			{ userId: 3, firstName: 'Jordan', lastName: 'Kim', phone: '555-410-1120', email: 'jordan.kim@apexbank.io', checkingId: 103, savingsId: 203 }
+		];
+
+		const accounts = [
+			{ accountId: 101, userId: 1, type: 'checking', nickname: 'Daily Spend', balance: 5480.77 },
+			{ accountId: 201, userId: 1, type: 'savings', nickname: 'Rainy Day', balance: 12340.55 },
+			{ accountId: 102, userId: 2, type: 'checking', nickname: 'Operations', balance: 2710.42 },
+			{ accountId: 202, userId: 2, type: 'savings', nickname: 'Future Goals', balance: 8311.05 },
+			{ accountId: 103, userId: 3, type: 'checking', nickname: 'Essentials', balance: 1794.16 },
+			{ accountId: 203, userId: 3, type: 'savings', nickname: 'Long Term', balance: 9642.88 }
+		];
+
+		const transactions = [
+			{ transactionId: 1, senderId: 1, recipientId: 1, accountType: 'checking', transactionType: 'DEPOSIT', date: '2026-04-01', amount: 1200.00, notes: 'Direct deposit' },
+			{ transactionId: 2, senderId: 1, recipientId: 1, accountType: 'checking', transactionType: 'WITHDRAW', date: '2026-04-02', amount: 160.15, notes: 'ATM cash' },
+			{ transactionId: 3, senderId: 1, recipientId: 2, accountType: 'savings', transactionType: 'TRANSFER', date: '2026-04-04', amount: 235.00, notes: 'Shared bills' }
+		];
+
+		let currentSession = {
+			role: 'client',
+			userId: 1,
+			jwt: null,
+			issuedAt: null
+		};
+
+		const el = {
+			loginUserId: document.getElementById('loginUserId'),
+			authBtn: document.getElementById('authBtn'),
+			authStatus: document.getElementById('authStatus'),
+			checkingBalance: document.getElementById('checkingBalance'),
+			savingsBalance: document.getElementById('savingsBalance'),
+			monthlyNet: document.getElementById('monthlyNet'),
+			profileForm: document.getElementById('profileForm'),
+			firstName: document.getElementById('firstName'),
+			lastName: document.getElementById('lastName'),
+			phone: document.getElementById('phone'),
+			email: document.getElementById('email'),
+			profileAck: document.getElementById('profileAck'),
+			accountTableBody: document.getElementById('accountTableBody'),
+			createAccountForm: document.getElementById('createAccountForm'),
+			createAccountType: document.getElementById('createAccountType'),
+			createAccountNickname: document.getElementById('createAccountNickname'),
+			createOpeningBalance: document.getElementById('createOpeningBalance'),
+			updateAccountForm: document.getElementById('updateAccountForm'),
+			updateAccountId: document.getElementById('updateAccountId'),
+			updateNickname: document.getElementById('updateNickname'),
+			updateBalance: document.getElementById('updateBalance'),
+			deleteAccountForm: document.getElementById('deleteAccountForm'),
+			deleteAccountId: document.getElementById('deleteAccountId'),
+			accountCrudAck: document.getElementById('accountCrudAck'),
+			cashForm: document.getElementById('cashForm'),
+			cashAccount: document.getElementById('cashAccount'),
+			cashType: document.getElementById('cashType'),
+			cashAmount: document.getElementById('cashAmount'),
+			transferForm: document.getElementById('transferForm'),
+			transferFrom: document.getElementById('transferFrom'),
+			transferRecipient: document.getElementById('transferRecipient'),
+			transferAmount: document.getElementById('transferAmount'),
+			transferNotes: document.getElementById('transferNotes'),
+			txAck: document.getElementById('txAck'),
+			monthFilter: document.getElementById('monthFilter'),
+			txTableBody: document.getElementById('txTableBody')
+		};
+
+		const dollars = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+		function getClient(userId) {
+			return clients.find(c => c.userId === Number(userId));
+		}
+
+		function getAccount(userId, type) {
+			return accounts.find(a => a.userId === Number(userId) && a.type === type);
+		}
+
+		function getAccountById(accountId) {
+			return accounts.find(a => a.accountId === Number(accountId));
+		}
+
+		function getClientAccounts(userId) {
+			return accounts.filter(a => a.userId === Number(userId));
+		}
+
+		function nextTransactionId() {
+			return transactions.length ? Math.max(...transactions.map(t => t.transactionId)) + 1 : 1;
+		}
+
+		function nextAccountId() {
+			return accounts.length ? Math.max(...accounts.map(a => a.accountId)) + 1 : 100;
+		}
+
+		function ensureAuth() {
+			if (!currentSession.jwt) {
+				return { ok: false, msg: 'Action blocked: generate JWT session first.' };
+			}
+			return { ok: true };
+		}
+
+		function ack(element, text, status = 'ok') {
+			const color = status === 'ok' ? 'text-emerald-700' : 'text-rose-700';
+			element.className = `mt-3 min-h-5 text-sm ${color}`;
+			element.textContent = text;
+		}
+
+		function renderProfile() {
+			const client = getClient(currentSession.userId);
+			if (!client) {
+				el.firstName.value = '';
+				el.lastName.value = '';
+				el.phone.value = '';
+				el.email.value = '';
+				return;
+			}
+			el.firstName.value = client.firstName;
+			el.lastName.value = client.lastName;
+			el.phone.value = client.phone;
+			el.email.value = client.email;
+		}
+
+		function monthlyReport(userId, monthPrefix) {
+			const rows = transactions.filter(t =>
+				(t.senderId === userId || t.recipientId === userId) &&
+				(!monthPrefix || t.date.startsWith(monthPrefix))
+			);
+
+			let net = 0;
+			rows.forEach(t => {
+				if (t.recipientId === userId) net += t.amount;
+				if (t.senderId === userId) net -= t.amount;
+			});
+
+			return { rows, net };
+		}
+
+		function renderTransactions() {
+			const month = el.monthFilter.value || '';
+			const report = monthlyReport(currentSession.userId, month);
+			el.monthlyNet.textContent = dollars(report.net);
+
+			if (!report.rows.length) {
+				el.txTableBody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-slate-500">No transactions found for this period.</td></tr>';
+				return;
+			}
+
+			el.txTableBody.innerHTML = report.rows
+				.sort((a, b) => b.date.localeCompare(a.date))
+				.map(t => {
+					const amountTone = t.senderId === currentSession.userId ? 'text-rose-700' : 'text-emerald-700';
+					const signedAmount = t.senderId === currentSession.userId ? `- ${dollars(t.amount)}` : `+ ${dollars(t.amount)}`;
+					return `
+						<tr class="border-t border-slate-100">
+							<td class="px-3 py-2">${t.date}</td>
+							<td class="px-3 py-2">${t.transactionType}</td>
+							<td class="px-3 py-2 font-semibold ${amountTone}">${signedAmount}</td>
+							<td class="px-3 py-2">${t.senderId}</td>
+							<td class="px-3 py-2">${t.recipientId}</td>
+							<td class="px-3 py-2">${t.notes || '-'}</td>
+						</tr>
+					`;
+				})
+				.join('');
+		}
+
+		function renderAccountDashboard() {
+			const ownAccounts = getClientAccounts(currentSession.userId);
+
+			if (!ownAccounts.length) {
+				el.accountTableBody.innerHTML = '<tr><td colspan="4" class="px-3 py-4 text-center text-slate-500">No accounts found. Use Add Account to create one.</td></tr>';
+				el.updateAccountId.innerHTML = '<option value="">No accounts</option>';
+				el.deleteAccountId.innerHTML = '<option value="">No accounts</option>';
+				return;
+			}
+
+			el.accountTableBody.innerHTML = ownAccounts
+				.sort((a, b) => a.type.localeCompare(b.type))
+				.map(a => `
+					<tr class="border-t border-slate-100">
+						<td class="px-3 py-2">${a.accountId}</td>
+						<td class="px-3 py-2 capitalize">${a.type}</td>
+						<td class="px-3 py-2">${a.nickname || '-'}</td>
+						<td class="px-3 py-2 font-semibold">${dollars(a.balance)}</td>
+					</tr>
+				`)
+				.join('');
+
+			const options = ownAccounts
+				.sort((a, b) => a.accountId - b.accountId)
+				.map(a => `<option value="${a.accountId}">${a.accountId} - ${a.type} (${a.nickname || 'No nickname'})</option>`)
+				.join('');
+
+			el.updateAccountId.innerHTML = options;
+			el.deleteAccountId.innerHTML = options;
+		}
+
+		function renderTransactionAccountOptions() {
+			const ownAccounts = getClientAccounts(currentSession.userId);
+			const options = ownAccounts
+				.map(a => `<option value="${a.type}">${a.type[0].toUpperCase() + a.type.slice(1)} (${a.nickname || a.type})</option>`)
+				.join('');
+
+			if (!options) {
+				el.cashAccount.innerHTML = '<option value="">No accounts available</option>';
+				el.transferFrom.innerHTML = '<option value="">No accounts available</option>';
+				return;
+			}
+
+			el.cashAccount.innerHTML = options;
+			el.transferFrom.innerHTML = options;
+		}
+
+		function renderBalances() {
+			const checking = getAccount(currentSession.userId, 'checking');
+			const savings = getAccount(currentSession.userId, 'savings');
+			el.checkingBalance.textContent = checking ? dollars(checking.balance) : '$0.00';
+			el.savingsBalance.textContent = savings ? dollars(savings.balance) : '$0.00';
+			renderAccountDashboard();
+			renderTransactionAccountOptions();
+			renderTransactions();
+		}
+
+		function simulateAcknowledgment(callback) {
+			const start = performance.now();
+			setTimeout(() => {
+				callback(Math.round(performance.now() - start));
+			}, 380 + Math.floor(Math.random() * 420));
+		}
+
+		el.authBtn.addEventListener('click', () => {
+			const userId = Number(el.loginUserId.value);
+
+			if (!getClient(userId)) {
+				ack(el.authStatus, 'Login failed: client User_ID not found.', 'error');
+				return;
+			}
+
+			currentSession = {
+				role: 'client',
+				userId,
+				jwt: `mock.jwt.${Math.random().toString(36).slice(2)}`,
+				issuedAt: new Date().toISOString()
+			};
+
+			renderProfile();
+			renderBalances();
+			ack(el.authStatus, `Client JWT issued at ${new Date().toLocaleTimeString()}.`);
+		});
+
+		el.profileForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.profileAck, auth.msg, 'error');
+				return;
+			}
+			const client = getClient(currentSession.userId);
+			if (!client) {
+				ack(el.profileAck, 'Client record not found.', 'error');
+				return;
+			}
+
+			client.firstName = el.firstName.value.trim() || client.firstName;
+			client.lastName = el.lastName.value.trim() || client.lastName;
+			client.phone = el.phone.value.trim() || client.phone;
+			client.email = el.email.value.trim() || client.email;
+
+			simulateAcknowledgment((ms) => {
+				ack(el.profileAck, `Profile updated in ${ms} ms.`);
+			});
+		});
+
+		el.createAccountForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.accountCrudAck, auth.msg, 'error');
+				return;
+			}
+			const type = el.createAccountType.value;
+			const openingBalance = Number(el.createOpeningBalance.value || 0);
+			const nickname = el.createAccountNickname.value.trim();
+
+			if (openingBalance < 0) {
+				ack(el.accountCrudAck, 'Opening balance cannot be negative.', 'error');
+				return;
+			}
+			if (getAccount(currentSession.userId, type)) {
+				ack(el.accountCrudAck, `A ${type} account already exists for this user.`, 'error');
+				return;
+			}
+
+			const client = getClient(currentSession.userId);
+			if (!client) {
+				ack(el.accountCrudAck, 'Client record not found.', 'error');
+				return;
+			}
+
+			const newAccount = {
+				accountId: nextAccountId(),
+				userId: currentSession.userId,
+				type,
+				nickname: nickname || `${type[0].toUpperCase() + type.slice(1)} Account`,
+				balance: Number(openingBalance.toFixed(2))
+			};
+
+			accounts.push(newAccount);
+			if (type === 'checking') client.checkingId = newAccount.accountId;
+			if (type === 'savings') client.savingsId = newAccount.accountId;
+
+			renderBalances();
+			simulateAcknowledgment((ms) => {
+				ack(el.accountCrudAck, `${type.toUpperCase()} account created in ${ms} ms.`);
+			});
+
+			el.createAccountNickname.value = '';
+			el.createOpeningBalance.value = '';
+		});
+
+		el.updateAccountForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.accountCrudAck, auth.msg, 'error');
+				return;
+			}
+			const accountId = Number(el.updateAccountId.value);
+			const account = getAccountById(accountId);
+			if (!account || account.userId !== currentSession.userId) {
+				ack(el.accountCrudAck, 'Selected account is invalid for this user.', 'error');
+				return;
+			}
+
+			const nickname = el.updateNickname.value.trim();
+			const nextBalanceRaw = el.updateBalance.value.trim();
+			let balanceChanged = false;
+
+			if (nickname) account.nickname = nickname;
+			if (nextBalanceRaw !== '') {
+				const nextBalance = Number(nextBalanceRaw);
+				if (Number.isNaN(nextBalance) || nextBalance < 0) {
+					ack(el.accountCrudAck, 'Balance must be a valid non-negative number.', 'error');
+					return;
+				}
+				balanceChanged = account.balance !== nextBalance;
+				account.balance = Number(nextBalance.toFixed(2));
+			}
+
+			if (balanceChanged) {
+				transactions.push({
+					transactionId: nextTransactionId(),
+					senderId: currentSession.userId,
+					recipientId: currentSession.userId,
+					accountType: account.type,
+					transactionType: 'UPDATE',
+					date: new Date().toISOString().slice(0, 10),
+					amount: account.balance,
+					notes: `Manual account update for Account_ID ${account.accountId}`
+				});
+			}
+
+			renderBalances();
+			simulateAcknowledgment((ms) => {
+				ack(el.accountCrudAck, `Account ${account.accountId} updated in ${ms} ms.`);
+			});
+
+			el.updateNickname.value = '';
+			el.updateBalance.value = '';
+		});
+
+		el.deleteAccountForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.accountCrudAck, auth.msg, 'error');
+				return;
+			}
+			const accountId = Number(el.deleteAccountId.value);
+			const index = accounts.findIndex(a => a.accountId === accountId && a.userId === currentSession.userId);
+			if (index === -1) {
+				ack(el.accountCrudAck, 'Account not found for delete.', 'error');
+				return;
+			}
+
+			const deletingType = accounts[index].type;
+			accounts.splice(index, 1);
+
+			for (let i = transactions.length - 1; i >= 0; i--) {
+				if ((transactions[i].senderId === currentSession.userId || transactions[i].recipientId === currentSession.userId) && transactions[i].accountType === deletingType) {
+					transactions.splice(i, 1);
+				}
+			}
+
+			const client = getClient(currentSession.userId);
+			if (client) {
+				if (deletingType === 'checking') client.checkingId = null;
+				if (deletingType === 'savings') client.savingsId = null;
+			}
+
+			renderBalances();
+			simulateAcknowledgment((ms) => {
+				ack(el.accountCrudAck, `Account ${accountId} deleted in ${ms} ms.`);
+			});
+		});
+
+		el.cashForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.txAck, auth.msg, 'error');
+				return;
+			}
+			const amount = Number(el.cashAmount.value);
+			const accountType = el.cashAccount.value;
+			const txType = el.cashType.value;
+
+			if (!accountType) {
+				ack(el.txAck, 'Create an account before submitting transactions.', 'error');
+				return;
+			}
+
+			if (!amount || amount <= 0) {
+				ack(el.txAck, 'Enter a valid amount greater than zero.', 'error');
+				return;
+			}
+
+			const acct = getAccount(currentSession.userId, accountType);
+			if (!acct) {
+				ack(el.txAck, 'Account not found.', 'error');
+				return;
+			}
+
+			if (txType === 'WITHDRAW' && acct.balance < amount) {
+				ack(el.txAck, 'Insufficient funds for withdrawal.', 'error');
+				return;
+			}
+
+			acct.balance = txType === 'DEPOSIT' ? acct.balance + amount : acct.balance - amount;
+
+			transactions.push({
+				transactionId: nextTransactionId(),
+				senderId: txType === 'WITHDRAW' ? currentSession.userId : currentSession.userId,
+				recipientId: currentSession.userId,
+				accountType,
+				transactionType: txType,
+				date: new Date().toISOString().slice(0, 10),
+				amount: Number(amount.toFixed(2)),
+				notes: txType === 'DEPOSIT' ? 'Self deposit' : 'Self withdrawal'
+			});
+
+			renderBalances();
+			simulateAcknowledgment((ms) => {
+				ack(el.txAck, `${txType} complete in ${ms} ms.`);
+			});
+			el.cashAmount.value = '';
+		});
+
+		el.transferForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			const auth = ensureAuth('client');
+			if (!auth.ok) {
+				ack(el.txAck, auth.msg, 'error');
+				return;
+			}
+			const recipientId = Number(el.transferRecipient.value);
+			const amount = Number(el.transferAmount.value);
+			const fromType = el.transferFrom.value;
+			const notes = el.transferNotes.value.trim();
+
+			if (!fromType) {
+				ack(el.txAck, 'Create an account before transferring funds.', 'error');
+				return;
+			}
+
+			if (!recipientId || !getClient(recipientId) || recipientId === currentSession.userId) {
+				ack(el.txAck, 'Recipient must be another valid client User_ID.', 'error');
+				return;
+			}
+			if (!amount || amount <= 0) {
+				ack(el.txAck, 'Enter a valid transfer amount.', 'error');
+				return;
+			}
+
+			const senderAccount = getAccount(currentSession.userId, fromType);
+			const recipientAccount = getAccount(recipientId, fromType);
+			if (!senderAccount || !recipientAccount) {
+				ack(el.txAck, 'Transfer account mapping failed.', 'error');
+				return;
+			}
+			if (senderAccount.balance < amount) {
+				ack(el.txAck, 'Insufficient funds for transfer.', 'error');
+				return;
+			}
+
+			senderAccount.balance -= amount;
+			recipientAccount.balance += amount;
+
+			transactions.push({
+				transactionId: nextTransactionId(),
+				senderId: currentSession.userId,
+				recipientId,
+				accountType: fromType,
+				transactionType: 'TRANSFER',
+				date: new Date().toISOString().slice(0, 10),
+				amount: Number(amount.toFixed(2)),
+				notes: notes || 'Peer transfer'
+			});
+
+			renderBalances();
+			simulateAcknowledgment((ms) => {
+				ack(el.txAck, `Transfer complete in ${ms} ms.`);
+			});
+			el.transferAmount.value = '';
+			el.transferRecipient.value = '';
+			el.transferNotes.value = '';
+		});
+
+		el.monthFilter.addEventListener('change', renderTransactions);
+
+		const today = new Date();
+		const initialMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+		el.monthFilter.value = initialMonth;
+
+		renderProfile();
+		renderBalances();
+		el.authStatus.textContent = 'Generate a client JWT session to unlock actions.';
+	</script>
+</body>
+</html>
